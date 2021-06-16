@@ -46,19 +46,19 @@ static uip_ipaddr_t destination_ipaddr;
 
 /* Get the preffered parent, and the current own IP of the node */
 #include "net/rpl/rpl-icmp6.c"
-//extern   rpl_parent_t *dao_preffered_parent;
-//extern   uip_ipaddr_t *dao_preffered_parent_ip;
-//extern   uip_ipaddr_t dao_prefix_own_ip;
+extern   rpl_parent_t *dao_preffered_parent;
+extern   uip_ipaddr_t *dao_preffered_parent_ip;
+extern   uip_ipaddr_t dao_prefix_own_ip;
 
 
 
 
 // ERROR IS HERE !!!!!!!!!!!!!!!!
-
+// even when i include above the rpl-icmp6, it gives errr????/
 
 
 /* Monitor this var. When changed, the node has changed parent */
-static rpl_parent_t *my_cur_parent;
+//static rpl_parent_t *my_cur_parent;
 
 
 
