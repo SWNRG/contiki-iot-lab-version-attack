@@ -5,7 +5,7 @@
 #include "net/ipv6/uip-ds6.h"
 #include "net/ip/uip-udp-packet.h"
 
-#include "net/rpl/rpl.h"      //coral
+//#include "net/rpl/rpl.h"      //coral
 
 #include "sys/ctimer.h"
 #include <stdio.h>
@@ -27,7 +27,7 @@
 #endif
 
 
-#include "apps/powertrace/powertrace.h"
+//#include "apps/powertrace/powertrace.h"
 // ASSIGN THEM DIRECTLY TOO MUCH MEM ALOCATION
 //unsigned seconds=60*5;// warning: if this variable is changed, then the kinect variable the count the minutes should be changed
 //double fixed_perc_energy = 1;// 0 - 1
@@ -38,7 +38,7 @@
 //extern double total_consumption;
 
 // from powertrace sohan
-extern uint32_t all_cpu, all_lpm, all_transmit, all_listen;
+//extern uint32_t all_cpu, all_lpm, all_transmit, all_listen;
 
 #ifndef PERIOD
 #define PERIOD 500 /* increase it to 700 avoid flooding */
@@ -74,7 +74,7 @@ static uint8_t sendUDP = 0;
 static uint8_t sendICMP = 0; 
 
 /* When true, the controller will start probing all nodes for detais */
-int enablePanicButton = 0;
+static int enablePanicButton = 0;
 
 /* When the controller detects version number attack, it orders to stop
  * resetting the tricle timer. The variables below lie in rpl-dag.c
@@ -308,8 +308,8 @@ monitor_DAO(void)
 		my_cur_parent = dao_preffered_parent;
 		my_cur_parent_ip = dao_preffered_parent_ip;
 		
-#define PRINT_PARENT 0
-#if PRINT_PARENT
+#define PRINT_NEW_PARENT 0
+#if PRINT_NEW_PARENT
 	   printf("NP:");
 	   printLongAddr(my_cur_parent_ip);
 	   printf(", sending to %d\n", 
@@ -470,7 +470,7 @@ uint8_t ICMPSent = 0;
       printf("\n");
       printf("My parent last oct: %d\n",ipLast);
 #endif
-      if (counter%10 == 0 & ipLast == 1){ // sink only???
+      if ( (counter%10 == 0) && (ipLast == 1) ){ // sink only???
       	PRINTF("Cur Round: %d\n",counter);
       }
       
