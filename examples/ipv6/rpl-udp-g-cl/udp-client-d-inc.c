@@ -95,7 +95,7 @@ static int seq_id;
 static int reply;
 /*-----------------------------------------------------------------------*/
 static void
-send_msg_to_sink(unsigned char *inMsg, uip_ipaddr_t *addr)
+send_msg_to_sink(char *inMsg, uip_ipaddr_t *addr)
 {
   unsigned char buf[50]; //dont forget, 50 chars
   unsigned char msg[50];
