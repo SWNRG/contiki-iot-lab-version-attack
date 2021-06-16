@@ -50,9 +50,26 @@ static uip_ipaddr_t destination_ipaddr;
 //extern   uip_ipaddr_t *dao_preffered_parent_ip;
 //extern   uip_ipaddr_t dao_prefix_own_ip;
 
+
+
+
+// ERROR IS HERE !!!!!!!!!!!!!!!!
+
+
+
 /* Monitor this var. When changed, the node has changed parent */
-static rpl_parent_t *my_cur_parent;
+//static rpl_parent_t *my_cur_parent;
+
+
+
+
+
 static uip_ipaddr_t *my_cur_parent_ip;
+
+
+
+
+
 
 static int counter=0; //counting rounds. Not really needed
 
