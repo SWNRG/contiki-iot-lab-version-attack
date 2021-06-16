@@ -511,7 +511,9 @@ typedef uint32_t rtimer_clock_t;
 
 #define UIP_CONF_ND6_SEND_RA                 0
 #define UIP_CONF_IP_FORWARD                  0
+#ifndef RPL_CONF_STATS
 #define RPL_CONF_STATS                       0
+#endif
 
 #define UIP_CONF_ND6_REACHABLE_TIME     600000
 #define UIP_CONF_ND6_RETRANS_TIMER       10000
