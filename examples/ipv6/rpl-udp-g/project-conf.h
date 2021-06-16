@@ -72,8 +72,10 @@
 
 
 #define UIP_CONF_STATISTICS 1   // stats ON
-#define RPL_CONF_STATS 1 // enable counting of dio_timer resets 
 
+#ifndef RPL_CONF_STATS
+#define RPL_CONF_STATS 1 // enable counting of dio_timer resets 
+#endif
 
 #if WITH_NON_STORING
 #undef RPL_NS_CONF_LINK_NUM
