@@ -60,7 +60,7 @@ static uint8_t sendUDP = 0;
 static uint8_t sendICMP = 0; 
 
 /* When true, the controller will start probing all nodes for detais */
-enablePanicButton = 0;
+int enablePanicButton = 0;
 
 /* When the controller detects version number attack, it orders to stop
  * resetting the tricle timer. The variables below lie in rpl-dag.c

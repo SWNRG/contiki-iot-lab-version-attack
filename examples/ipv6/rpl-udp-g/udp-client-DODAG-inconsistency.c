@@ -74,7 +74,7 @@ static uint8_t sendUDP = 0;
 static uint8_t sendICMP = 0; 
 
 /* When true, the controller will start probing all nodes for detais */
-enablePanicButton = 0;
+int enablePanicButton = 0;
 
 /* When the controller detects version number attack, it orders to stop
  * resetting the tricle timer. The variables below lie in rpl-dag.c
@@ -95,7 +95,7 @@ static int seq_id;
 static int reply;
 /*-----------------------------------------------------------------------*/
 static void
-send_msg_to_sink(char *inMsg, uip_ipaddr_t *addr)
+send_msg_to_sink(unsigned char *inMsg, uip_ipaddr_t *addr)
 {
   unsigned char buf[50]; //dont forget, 50 chars
   unsigned char msg[50];
@@ -375,7 +375,7 @@ uint8_t ICMPSent = 0;
 //original powertracing, once every ten seconds
 //powertrace_start(CLOCK_SECOND * 100);
 
-powertrace_start(SEND_INTERVAL); 
+//powertrace_start(SEND_INTERVAL); 
 
 
   set_global_address();
@@ -560,8 +560,14 @@ if (counter > 0){	 // too many messages
     
     //printf("Battery: Energy Total consumption (microA): %lu\n",(unsigned long) (total_consumption));
   
-	 printf("POWER R:%u %lu %lu %lu %lu %lu %lu %lu %lu\n", counter,
-	 	all_cpu, all_lpm, all_transmit, all_listen);      
+  // George , June 2021
+  
+  // I will try to use the power consumption from iot-lab.
+  // if it does not work, DO ENABLE THESE. DONT FORGET to copy files needed
+  
+  
+	 //printf("POWER R:%u %lu %lu %lu %lu %lu %lu %lu %lu\n", counter,
+	 	// all_cpu, all_lpm, all_transmit, all_listen);      
   
   }
   PROCESS_END();
