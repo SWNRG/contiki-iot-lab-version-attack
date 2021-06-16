@@ -50,7 +50,7 @@ static uip_ipaddr_t destination_ipaddr;
 
 // ERROR IS HERE !!!!!!!!!!!!!!!!
 // even when i include above the rpl-icmp6, it gives errr????/
-//#include "net/rpl/rpl-icmp6.c"
+#include "core/net/rpl/rpl-icmp6.c"
 
 
 
