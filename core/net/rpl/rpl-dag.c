@@ -70,6 +70,26 @@ void RPL_CALLBACK_PARENT_SWITCH(rpl_parent_t *old, rpl_parent_t *new);
 extern rpl_of_t rpl_of0, rpl_mrhof;
 static rpl_of_t * const objective_functions[] = RPL_SUPPORTED_OFS;
 
+
+
+/* George: Variables to monitor version number attack on the app layer.
+ * If one of them is <>0 the controller will be notified
+ */
+static uint8_t dio_bigger_than_dag = 0;
+static uint8_t dio_smaller_than_dag = 0;
+
+/* George: If this turns true, all nodes will stop resetting trickle timer, 
+ * because there is a version attack going on
+ */
+static uint8_t ignore_version_number_incos = 0;
+
+
+
+//set this to print when and how trickle is reset
+#define PRINT_TRICKLE_ON 1
+
+
+
 /*---------------------------------------------------------------------------*/
 /* RPL definitions. */
 
@@ -1454,14 +1474,59 @@ rpl_process_dio(uip_ipaddr_t *from, rpl_dio_t *dio)
   dag = get_dag(dio->instance_id, &dio->dag_id);
   instance = rpl_get_instance(dio->instance_id);
 
+
+
+  // Just debugging
+  //printf("Node starting DIO, dio_bigger_than_dag:%d\n", dio_bigger_than_dag);
+  //printf("Node starting DIO, dio_smaller_than_dag:%d\n", dio_smaller_than_dag);
+  
+ /* George: Every time a new DIO is coming, if the version number is not
+  * irregular (check below), it should turn the "alarms" off. If there is
+  * an irregularity, the alarms will go on as per below.
+  */
+  dio_bigger_than_dag = 0;
+  dio_smaller_than_dag = 0; 
+
+
+
+
+
   if(dag != NULL && instance != NULL) {
     if(lollipop_greater_than(dio->version, dag->version)) {
-      if(dag->rank == ROOT_RANK(instance)) {
-        PRINTF("RPL: Root received inconsistent DIO version number (current: %u, received: %u)\n", dag->version, dio->version);
+      if(dag->rank == ROOT_RANK(instance)) { // George: root node only
+        printf("RPL: Root received inconsistent DIO version number (current: %u, received: %u)\n", dag->version, dio->version);
         dag->version = dio->version;
+        
+ 
+         // George
+        dio_bigger_than_dag = 1;
+		  PRINTF("ROOT in greater_than, dio_bigger_than_dag:%d\n", dio_bigger_than_dag); 	
+		  
+		         
         RPL_LOLLIPOP_INCREMENT(dag->version);
-        rpl_reset_dio_timer(instance);
+        
+        
+       // George
+      // Papers suggest if the new dag is >20 per hour, ignore global repair
+        if(ignore_version_number_incos == 0)        
+        		
+        		/* original line */
+        		rpl_reset_dio_timer(instance);
+        		
+#if PRINT_TRICKLE_ON
+  printf("RPL: Version number inconsistency. Resetting trickle...\n");
+#endif
+        		
+        
+        
       } else {
+      
+
+        // George
+        dio_bigger_than_dag = 1;
+		  PRINTF("NODE in greater_than, dio_bigger_than_dag:%d\n", dio_bigger_than_dag); 
+		  
+		        
         PRINTF("RPL: Global repair\n");
         if(dio->prefix_info.length != 0) {
           if(dio->prefix_info.flags & UIP_ND6_RA_FLAG_AUTONOMOUS) {
@@ -1469,16 +1534,40 @@ rpl_process_dio(uip_ipaddr_t *from, rpl_dio_t *dio)
             rpl_set_prefix(dag, &dio->prefix_info.prefix, dio->prefix_info.length);
           }
         }
-        global_repair(from, dag, dio);
+
+		    // George client nodes only
+		   // Papers suggest if the new dag is >20 per hour, ignore global repair
+		     if(ignore_version_number_incos == 0){
+		     		printf("George: ignore_version_number_incos=%d, hence global_repair happen\n", ignore_version_number_incos);        
+		     
+		     /* original line */
+		     global_repair(from, dag, dio);
+		     
+	  		 }      
+        
       }
       return;
     }
 
     if(lollipop_greater_than(dag->version, dio->version)) {
       /* The DIO sender is on an older version of the DAG. */
-      PRINTF("RPL: old version received => inconsistency detected\n");
+      printf("RPL: old version received => inconsistency detected\n");
       if(dag->joined) {
+        
+        
+        
+        // George	      
+        dio_smaller_than_dag = 1;
+        printf("RPL: resetting dio_timer due to old version number received\n");         
+   
+        /* original line */
         rpl_reset_dio_timer(instance);
+
+#if PRINT_TRICKLE_ON
+  printf("RPL: Old DAG version received. Resetting trickle...\n");
+#endif        
+        
+        
         return;
       }
     }
@@ -1536,6 +1625,19 @@ rpl_process_dio(uip_ipaddr_t *from, rpl_dio_t *dio)
     PRINTF("RPL: Could not add parent based on DIO\n");
     return;
   }
+
+
+
+
+
+// George
+/*
+printf("new neighbor from DIO: ");
+printLongAddr(from);
+printf("\n");
+*/
+
+
 
   if(dag->rank == ROOT_RANK(instance)) {
     if(dio->rank != INFINITE_RANK) {

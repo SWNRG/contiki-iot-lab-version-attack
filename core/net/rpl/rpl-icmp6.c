@@ -1,49 +1,3 @@
-/*
- * Copyright (c) 2010, Swedish Institute of Computer Science.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the Institute nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * This file is part of the Contiki operating system.
- *
- */
-
-/**
- * \file
- *         ICMP6 I/O for RPL control messages.
- *
- * \author Joakim Eriksson <joakime@sics.se>, Nicolas Tsiftes <nvt@sics.se>
- * Contributors: Niclas Finne <nfi@sics.se>, Joel Hoglund <joel@sics.se>,
- *               Mathieu Pouillot <m.pouillot@watteco.com>
- *               George Oikonomou <oikonomou@users.sourceforge.net> (multicast)
- */
-
-/**
- * \addtogroup uip6
- * @{
- */
 
 #include "net/ip/tcpip.h"
 #include "net/ip/uip.h"
@@ -62,6 +16,12 @@
 #define DEBUG DEBUG_NONE
 
 #include "net/ip/uip-debug.h"
+
+/* George they will be sent to app layer for extra info to the sink */ 
+static  rpl_parent_t *dao_preffered_parent;
+static  uip_ipaddr_t *dao_preffered_parent_ip;
+static  uip_ipaddr_t dao_prefix_own_ip;
+static uint8_t dao_parent_set=0;
 
 /*---------------------------------------------------------------------------*/
 #define RPL_DIO_GROUNDED                 0x80
@@ -494,7 +454,8 @@ dio_output(rpl_instance_t *instance, uip_ipaddr_t *uc_addr)
   is_root = (dag->rank == ROOT_RANK(instance));
 
 #if RPL_LEAF_ONLY
-  PRINTF("RPL: LEAF ONLY DIO rank set to INFINITE_RANK\n");
+// George PRINTF->printf
+  printf("RPL: LEAF ONLY DIO rank set to INFINITE_RANK\n");
   set16(buffer, pos, INFINITE_RANK);
 #else /* RPL_LEAF_ONLY */
   set16(buffer, pos, dag->rank);
@@ -1088,9 +1049,31 @@ dao_output(rpl_parent_t *parent, uint8_t lifetime)
   }
 
   if(parent == NULL || parent->dag == NULL || parent->dag->instance == NULL) {
-    return;
+  	 
+  	  	  // George no parent yet, hence dont sent anything to the controller
+  	 	  PRINTF("RPL: No parent set yet\n");
+  	 	  dao_parent_set = 0;
+  	     
+  	     return;
   }
 
+
+  /* 2020-10-10 the below, for networks > 25 nodes returns a "crazy" IP 
+   * for at least one node [00a0:....:0000] which is not to be found 
+  
+  
+  // 2020-10-10 moved inside dao_output_target_seq. Looks better???
+  
+  else { // George All these lines added for sending the parent to the controller
+		  // George they will be external to app layer for extra info to the sink
+		dao_preffered_parent = parent;
+		dao_preffered_parent_ip = rpl_get_parent_ipaddr(dao_preffered_parent->dag->preferred_parent);
+		dao_prefix_own_ip = prefix; //node's current own IP address
+		dao_parent_set = 1; //now the parent can be used further
+  }
+  */
+  
+  
   RPL_LOLLIPOP_INCREMENT(dao_sequence);
 #if RPL_WITH_DAO_ACK
   /* set up the state since this will be the first transmission of DAO */
@@ -1171,6 +1154,23 @@ dao_output_target_seq(rpl_parent_t *parent, uip_ipaddr_t *prefix,
   RPL_DEBUG_DAO_OUTPUT(parent);
 #endif
 
+
+
+
+		// George they will be external to app layer for extra info to the sink
+		dao_preffered_parent = parent;
+		dao_preffered_parent_ip = rpl_get_parent_ipaddr(dao_preffered_parent->dag->preferred_parent);
+		//dao_prefix_own_ip = prefix; //node's current own IP address
+		dao_parent_set = 1; //now the parent can be used further
+
+
+		//printf("my rpl-icmp6.c parent: ");
+		//printLongAddr(parent_ipaddr);
+		//printf("\n");
+		
+		
+		
+		
   buffer = UIP_ICMP_PAYLOAD;
   pos = 0;
 
