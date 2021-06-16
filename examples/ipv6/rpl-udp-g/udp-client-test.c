@@ -69,10 +69,10 @@ static int enablePanicButton = 0;
 /* When the controller detects version number attack, it orders to stop
  * resetting the tricle timer. The variables below lie in rpl-dag.c
  */
-#include "net/rpl/rpl-dag.c"
-extern uint8_t ignore_version_number_incos; //if == 1 DIO will not reset trickle
-extern uint8_t dio_bigger_than_dag; // if version attack, this will be 1
-extern uint8_t dio_smaller_than_dag; // if version attack, this will be 1
+//#include "net/rpl/rpl-dag.c"
+//extern uint8_t ignore_version_number_incos; //if == 1 DIO will not reset trickle
+//extern uint8_t dio_bigger_than_dag; // if version attack, this will be 1
+//extern uint8_t dio_smaller_than_dag; // if version attack, this will be 1
  
 static uint8_t prevICMRecv = 0;
 static uint8_t prevICMPSent = 0;
