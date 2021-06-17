@@ -6,8 +6,8 @@
 #include "contiki.h"
 #include "net/ip/uip.h"
 
-#include "dixonQtestIn.c"
-#include "dixonQtestOut.c"
+//#include "dixonQtestIn.c"
+//#include "dixonQtestOut.c"
 
 #define UDP_CLIENT_PORT 8765
 #define UDP_SERVER_PORT 5678
@@ -47,16 +47,7 @@ static uip_ipaddr_t destination_ipaddr;
 
 static uip_ipaddr_t *my_cur_parent_ip;
 
-static int counter=0; //counting rounds. Not really needed
 
-/* When this variable is true, start sending UDP stats */
-static uint8_t sendUDP = 0; 
-
-/* When this variable is true, start sending ICMP stats */
-static uint8_t sendICMP = 0; 
-
-/* When true, the controller will start probing all nodes for detais */
-static int enablePanicButton = 0;
 
 /* When the controller detects version number attack, it orders to stop
  * resetting the tricle timer. The variables below lie in rpl-dag.c
@@ -66,15 +57,12 @@ static int enablePanicButton = 0;
 //extern uint8_t dio_bigger_than_dag; // if version attack, this will be 1
 //extern uint8_t dio_smaller_than_dag; // if version attack, this will be 1
  
-static uint8_t prevICMRecv = 0;
-static uint8_t prevICMPSent = 0;
 
 /*---------------------------------------------------------------------------*/
 PROCESS(udp_client_process, "UDP client process");
 AUTOSTART_PROCESSES(&udp_client_process);
 /*---------------------------------------------------------------------------*/
-static int seq_id;
-static int reply;
+
 
 
 /*---------------------------------------------------------------------------*/
