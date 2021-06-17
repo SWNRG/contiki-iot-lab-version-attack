@@ -4,7 +4,7 @@
  */
 
 #include "contiki.h"
-#include "net/ip/uip.h"
+#include "core/net/ip/uip.h"
 
 //#include "dixonQtestIn.c"
 //#include "dixonQtestOut.c"
@@ -14,7 +14,7 @@ static uip_ipaddr_t server_ipaddr;
 static uip_ipaddr_t destination_ipaddr;
 
 
-#include "/core/net/rpl/rpl-icmp6.c"
+#include "core/net/rpl/rpl-icmp6.c"
 extern   rpl_parent_t *dao_preffered_parent;
 //extern   uip_ipaddr_t *dao_preffered_parent_ip;
 //extern   uip_ipaddr_t dao_prefix_own_ip;
