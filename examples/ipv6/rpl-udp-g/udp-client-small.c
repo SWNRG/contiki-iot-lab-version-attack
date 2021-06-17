@@ -34,29 +34,18 @@ static uip_ipaddr_t destination_ipaddr;
 
 // ERROR IS HERE !!!!!!!!!!!!!!!!
 // even when i include above the rpl-icmp6, it gives errr????/
-#include "core/net/rpl/rpl-icmp6.c"
+//#include "core/net/rpl/rpl-icmp6.c"
 
 
 
-extern   rpl_parent_t *dao_preffered_parent;
+//extern   rpl_parent_t *dao_preffered_parent;
 //extern   uip_ipaddr_t *dao_preffered_parent_ip;
 //extern   uip_ipaddr_t dao_prefix_own_ip;
-
-
-
-
-
-
 
 /* Monitor this var. When changed, the node has changed parent */
 //static rpl_parent_t *my_cur_parent;
 
 static uip_ipaddr_t *my_cur_parent_ip;
-
-
-
-
-
 
 static int counter=0; //counting rounds. Not really needed
 
