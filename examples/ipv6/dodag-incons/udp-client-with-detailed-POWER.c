@@ -22,12 +22,12 @@
 #define UIP_IP_BUF   ((struct uip_ip_hdr *)&uip_buf[UIP_LLH_LEN])
 
 //#define DEBUG DEBUG_FULL
-#if DEBUG
+//#if DEBUG
 #include "net/ip/uip-debug.h"
-#endif
+//#endif
 
 
-#include "apps/powertrace/powertrace.h"
+//#include "apps/powertrace/powertrace.h"
 // ASSIGN THEM DIRECTLY TOO MUCH MEM ALOCATION
 //unsigned seconds=60*5;// warning: if this variable is changed, then the kinect variable the count the minutes should be changed
 //double fixed_perc_energy = 1;// 0 - 1
@@ -38,7 +38,7 @@
 //extern double total_consumption;
 
 // from powertrace sohan
-extern uint32_t all_cpu, all_lpm, all_transmit, all_listen;
+//extern uint32_t all_cpu, all_lpm, all_transmit, all_listen;
 
 #ifndef PERIOD
 #define PERIOD 500 /* increase it to 700 avoid flooding */
@@ -57,7 +57,9 @@ static uip_ipaddr_t server_ipaddr;
 static uip_ipaddr_t destination_ipaddr;
 
 /* Get the preffered parent, and the current own IP of the node */
-#include "net/rpl/rpl-icmp6.c"
+/* June 2021 Was not compiling in iot-lab */
+//#include "core/net/rpl/rpl-icmp6.c" 
+#include "net/rpl/icmp6-extern.h"
 extern   rpl_parent_t *dao_preffered_parent;
 extern   uip_ipaddr_t *dao_preffered_parent_ip;
 extern   uip_ipaddr_t dao_prefix_own_ip;
@@ -65,7 +67,6 @@ extern   uip_ipaddr_t dao_prefix_own_ip;
 /* Monitor this var. When changed, the node has changed parent */
 static rpl_parent_t *my_cur_parent;
 static uip_ipaddr_t *my_cur_parent_ip;
-static int counter=0; //counting rounds. Not really needed
 
 /* When this variable is true, start sending UDP stats */
 static uint8_t sendUDP = 0; 
@@ -79,7 +80,8 @@ enablePanicButton = 0;
 /* When the controller detects version number attack, it orders to stop
  * resetting the tricle timer. The variables below lie in rpl-dag.c
  */
-#include "net/rpl/rpl-dag.c"
+//#include "net/rpl/rpl-dag.c"
+#include "net/rpl/rpl-extern.h"
 extern uint8_t ignore_version_number_incos; //if == 1 DIO will not reset trickle
 extern uint8_t dio_bigger_than_dag; // if version attack, this will be 1
 extern uint8_t dio_smaller_than_dag; // if version attack, this will be 1
@@ -87,6 +89,7 @@ extern uint8_t dio_smaller_than_dag; // if version attack, this will be 1
 static uint8_t prevICMRecv = 0;
 static uint8_t prevICMPSent = 0;
 
+static int counter=0; //counting rounds. Not really needed
 /*-----------------------------------------------------------------------*/
 PROCESS(udp_client_process, "UDP client process");
 AUTOSTART_PROCESSES(&udp_client_process);
@@ -294,7 +297,7 @@ monitor_DAO(void)
  */
 	//uip_ipaddr_t *addr; // is this needed ???
 	
-#define PRINT_CHANGES 0
+#define PRINT_CHANGES 1
 
 	/* In contiki, you can directly compare if(parent == parent2) */
 	if(my_cur_parent != dao_preffered_parent){
@@ -308,7 +311,7 @@ monitor_DAO(void)
 		my_cur_parent = dao_preffered_parent;
 		my_cur_parent_ip = dao_preffered_parent_ip;
 		
-#define PRINT_PARENT 0
+#define PRINT_PARENT 1
 #if PRINT_PARENT
 	   printf("NP:");
 	   printLongAddr(my_cur_parent_ip);
@@ -419,7 +422,7 @@ powertrace_start(SEND_INTERVAL);
   
   
   // Open all until where you want
-#define SLIM_MODE 0
+#define SLIM_MODE 1
 #define ESSENTIAL_MODE 0
 #define FULL_MODE 0
 
@@ -560,8 +563,8 @@ if (counter > 500){	 // too many messages, ALTER AS YOU WISH
     
     //printf("Battery: Energy Total consumption (microA): %lu\n",(unsigned long) (total_consumption));
   
-	 printf("POWER R:%u %lu %lu %lu %lu %lu %lu %lu %lu\n", counter,
-	 	all_cpu, all_lpm, all_transmit, all_listen);      
+	 //printf("POWER R:%u %lu %lu %lu %lu %lu %lu %lu %lu\n", counter,
+	 	//all_cpu, all_lpm, all_transmit, all_listen);      
   
   }
   PROCESS_END();
