@@ -392,7 +392,7 @@ PROCESS_THREAD(udp_server_process, ev, data)
       printf("R: %d, global repairs: %d\n",counter,rpl_stats.global_repairs);
 #endif
 
-#define OVERHEAD_STATS 0
+#define OVERHEAD_STATS 1
 #if OVERHEAD_STATS
 		printf("R:%d, icmp_send:%d\n",counter, uip_stat.icmp.sent);
 		printf("R:%d, icmp_recv:%d\n",counter, uip_stat.icmp.recv);

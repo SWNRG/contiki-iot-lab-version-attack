@@ -378,8 +378,7 @@ uint8_t ICMPSent = 0;
 //original powertracing, once every ten seconds
 //powertrace_start(CLOCK_SECOND * 100);
 
-powertrace_start(SEND_INTERVAL); 
-
+//powertrace_start(SEND_INTERVAL); 
 
   set_global_address();
 
@@ -423,7 +422,7 @@ powertrace_start(SEND_INTERVAL);
   
   // Open all until where you want
 #define SLIM_MODE 1
-#define ESSENTIAL_MODE 0
+#define ESSENTIAL_MODE 1
 #define FULL_MODE 0
 
 
@@ -480,7 +479,7 @@ powertrace_start(SEND_INTERVAL);
       /* sending periodic UDP data to sink (e.g. temperature measurements) */
       ctimer_set(&backoff_timer, SEND_TIME, send_packet, NULL);   
 	
-if (counter > 500){	 // too many messages, ALTER AS YOU WISH      
+if (counter > 1){	 // too many messages, ALTER AS YOU WISH      
       printf("R: %d, trickle resets number: %d\n",counter,rpl_stats.resets);
       printf("R: %d, global repairs: %d\n",counter,rpl_stats.global_repairs);
       printf("R: %d, local repairs: %d\n",counter,rpl_stats.local_repairs);
