@@ -36,11 +36,6 @@ static uint8_t uart_buffer[UART_BUFFER_SIZE];
 static uint8_t uart_buffer_index = 0;
 /*********************************/
 
-#if OVERHEAD_STATS
-	static int udp_total_counter = 0;
-	static int udp_previous =0;	
-#endif
-
 static struct uip_udp_conn *server_conn;
 static struct uip_udp_conn *client_conn;
 
@@ -48,18 +43,11 @@ static uip_ipaddr_t ServerIpAddress;
 
 int counter = 0; // just a round counter
 
-static rpl_dag_t *dag; //moved here to be global var
-
 /* When the controller detects version number attack, it orders to stop
  * resetting the tricle timer. The variable lies in rpl-dag.c
  */
 #include "net/rpl/rpl-dag.c"
 extern uint8_t ignore_version_number_incos;
-
-static int prevICMRecv = 0;
-static int prevICMPSent = 0;
-static int ICMPSent = 0;
-static int ICMPRecv = 0;
 
 PROCESS(udp_server_process, "UDP server process");
 //PROCESS(read_serial, "Read serial process");
@@ -73,7 +61,6 @@ tcpip_handler(void) /* CLIENTS' SIDE TRIGGERED */
   uip_ipaddr_t *child_node;
   
   if(uip_newdata()) {
-  
     appdata = (char *)uip_appdata;
     appdata[uip_datalen()] = 0;
 #define PRINT_DETAILS 0
@@ -99,26 +86,20 @@ tcpip_handler(void) /* CLIENTS' SIDE TRIGGERED */
     	  (appdata[0] == 'V' && appdata[1] == 'A') ) /* node is under version num attack */
     { 	
     	 /* controller reads UART line starting with 2 chars (NP, etc.) */
-		 printf("%s from ", appdata);
-		 printLongAddr(child_node);	
-		 printf("\n");   
+		// printf("%s from ", appdata);
+		// printLongAddr(child_node);	
+		// printf("\n");   
     } 
     else{    
     	/* printing an incoming message, e.g. various enviromental measurements */
-		 printf("%s from ", appdata);
-		 printLongAddr(child_node);
-		 printf("\n");
-		 
-#if OVERHEAD_STATS
-	   /* Counting only data packets, NOT UDP for the controller protocol */
-		 udp_total_counter++;
-#endif
-
+	//	 printf("%s from ", appdata);
+	//	 printLongAddr(child_node);
+	//	 printf("\n");
 #if SERVER_REPLY
     	 PRINTF("Server Replying... \n");
     	 send_custom_msg(&UIP_IP_BUF->srcipaddr, server_msg);    
 #endif
-	 }
+	}
   }
 }
 /*-------------- All direct children and their descentants -------------------*/
@@ -161,7 +142,7 @@ static void
 print_stats(void)
 {
 	printf("Printing all ENABLED stats\n");  
-#define PRINTROUTES 1
+#define PRINTROUTES 0
 #if PRINTROUTES  
 	print_all_routes();
 #endif	 
@@ -267,14 +248,14 @@ serial_input_byte(unsigned char c)
 		sprintf(buf, in_comm);
 		uip_udp_packet_sendto(client_conn, buf, strlen(buf),
 		 		&uip_node_ip, UIP_HTONS(UDP_SERVER_PORT));
-#define PRINT_DET 1
+#define PRINT_DET 0
 #if PRINT_DET
-		printf("SENT %s to node ",in_comm);
+		printf("#SEND %s to node ",in_comm);
 		printShortAddr(&uip_node_ip);
 		printf("\n");
 	
-		//printLongAddr(&uip_node_ip);
-		//printf(", in_comm msg: %s\n", in_comm);
+		printLongAddr(&uip_node_ip);
+		printf(", in_comm msg: %s\n", in_comm);
 #endif	
 		 //}else{
 #define print_output 0
@@ -330,7 +311,7 @@ PROCESS_THREAD(udp_server_process, ev, data)
   uip_ds6_addr_add(&ipaddr, 0, ADDR_MANUAL);
   root_if = uip_ds6_addr_lookup(&ipaddr);
   if(root_if != NULL) {
-    //rpl_dag_t *dag; //turned into global var at the top
+    rpl_dag_t *dag;
     dag = rpl_set_root(RPL_DEFAULT_INSTANCE,(uip_ip6addr_t *)&ipaddr);
     uip_ip6addr(&ipaddr, UIP_DS6_DEFAULT_PREFIX, 0, 0, 0, 0, 0, 0, 0);
     rpl_set_prefix(dag, &ipaddr, 64);
@@ -377,54 +358,12 @@ PROCESS_THREAD(udp_server_process, ev, data)
     
     if(etimer_expired(&periodic)) {
       etimer_reset(&periodic);
-      ctimer_set(&backoff_timer, SEND_TIME, ping_only, NULL);
+      //ctimer_set(&backoff_timer, SEND_TIME, ping_only, NULL);
       
       counter++;
-      
-      // TODO: sent this to the controller. 
-      /* If any node is found with equal or less, 
-       * this is a rank attack
-      */
-      printf("R: %d, my current rank: %d\n",counter, dag->rank);
-         
-#ifndef DODAG_ATTACK_STATS
-#define DODAG_ATTACK_STATS 1
-#endif
-            
-#if DODAG_ATTACK_STATS      
       printf("R: %d, trickle resets number: %d\n",counter,rpl_stats.resets);
       printf("R: %d, global repairs: %d\n",counter,rpl_stats.global_repairs);
-#endif
-
-#define OVERHEAD_STATS 0
-#if OVERHEAD_STATS
-		printf("R:%d, icmp_send:%d\n",counter, uip_stat.icmp.sent);
-		printf("R:%d, icmp_recv:%d\n",counter, uip_stat.icmp.recv);
-		printf("R:%d, Total incoming UDP:%d\n",counter, udp_total_counter);
-#endif
-
-
-#define ANY_MODE 1
-// print if needed stats per turn NOT TOTALS
-#if ANY_MODE 
-		ICMPSent = uip_stat.icmp.sent - prevICMPSent;
-		prevICMPSent = uip_stat.icmp.sent;
-		ICMPRecv = uip_stat.icmp.recv - prevICMRecv;
-		prevICMRecv = uip_stat.icmp.recv;
-				
-		printf("R:%d, CURRENT_icmp_sent:%d\n",counter,ICMPSent);
-		printf("R:%d, CURRENT_icmp_recv:%d\n",counter,ICMPRecv);
-		udp_previous = udp_total_counter - udp_previous;	
-		
-		//TODO: check if this is ok???
-		printf("R:%d, CURRENT_in_UDP:%d\n",counter, udp_total_counter);	
-		
-		
-		printf("R:%d, Current_in_UDP_from previous:%d\n",counter, udp_previous);
-		udp_previous = udp_total_counter;
-		udp_total_counter =0; // TODO: is this ok? restart the packer counter?	
-#endif
-		      
+      
     }
   }
   PROCESS_END();
