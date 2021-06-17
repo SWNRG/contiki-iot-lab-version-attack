@@ -72,6 +72,8 @@ static rpl_of_t * const objective_functions[] = RPL_SUPPORTED_OFS;
 
 
 
+/* Jun 2021 Below externilized vars moved to rpl-exern.h */
+#include "rpl-extern.h"
 /* George: Variables to monitor version number attack on the app layer.
  * If one of them is <>0 the controller will be notified
  */
