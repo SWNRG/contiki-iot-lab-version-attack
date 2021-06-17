@@ -19,7 +19,7 @@ static uip_ipaddr_t destination_ipaddr;
 
 
 
-//extern   rpl_parent_t *dao_preffered_parent;
+extern   rpl_parent_t *dao_preffered_parent;
 //extern   uip_ipaddr_t *dao_preffered_parent_ip;
 //extern   uip_ipaddr_t dao_prefix_own_ip;
 
