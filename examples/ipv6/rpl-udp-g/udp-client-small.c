@@ -4,15 +4,15 @@
  */
 
 #include "contiki.h"
-//#include "net/ip/uip.h"
+#include "net/ip/uip.h"
 
 //#include "dixonQtestIn.c"
 //#include "dixonQtestOut.c"
 
 
-//static struct uip_udp_conn *client_conn;
-//static uip_ipaddr_t server_ipaddr;
-//static uip_ipaddr_t destination_ipaddr;
+static struct uip_udp_conn *client_conn;
+static uip_ipaddr_t server_ipaddr;
+static uip_ipaddr_t destination_ipaddr;
 
 
 //#include "core/net/rpl/rpl-icmp6.c"
