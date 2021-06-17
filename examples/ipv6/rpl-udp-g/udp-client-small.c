@@ -4,8 +4,7 @@
  */
 
 #include "contiki.h"
-
-
+#include "net/ip/uip.h"
 
 #include "dixonQtestIn.c"
 #include "dixonQtestOut.c"
@@ -14,8 +13,6 @@
 #define UDP_SERVER_PORT 5678
 
 #define UDP_EXAMPLE_ID  190
-
-
 
 #ifndef PERIOD
 #define PERIOD 500 /* increase it to 700 avoid flooding */
@@ -37,7 +34,7 @@ static uip_ipaddr_t destination_ipaddr;
 
 // ERROR IS HERE !!!!!!!!!!!!!!!!
 // even when i include above the rpl-icmp6, it gives errr????/
-#include "/net/rpl/rpl-icmp6.c"
+#include "core/net/rpl/rpl-icmp6.c"
 
 
 
