@@ -26,6 +26,20 @@
 #include "net/ip/uip-debug.h"
 #endif
 
+
+#include "apps/powertrace/powertrace.h"
+// ASSIGN THEM DIRECTLY TOO MUCH MEM ALOCATION
+//unsigned seconds=60*5;// warning: if this variable is changed, then the kinect variable the count the minutes should be changed
+//double fixed_perc_energy = 1;// 0 - 1
+//unsigned variation = 2;//0 - 99
+/* The variable "fixed_perc_energy" correspods to the variable that will tell the PowertraceK the percentage of energy the node will start, considering the full battery capacity is 1000000 microAh. For example, setting fixed_perc_energy = 0.2 means that the nodes will be initiated with 20 % of 1000000 microAh = 200000 microAh. */
+
+//extern double periodic_consumption; // set in powertrace. Used here with round
+//extern double total_consumption;
+
+// from powertrace sohan
+extern uint32_t all_cpu, all_lpm, all_transmit, all_listen;
+
 #ifndef PERIOD
 #define PERIOD 500 /* increase it to 700 avoid flooding */
 #endif
@@ -60,7 +74,7 @@ static uint8_t sendUDP = 0;
 static uint8_t sendICMP = 0; 
 
 /* When true, the controller will start probing all nodes for detais */
-int enablePanicButton = 0;
+enablePanicButton = 0;
 
 /* When the controller detects version number attack, it orders to stop
  * resetting the tricle timer. The variables below lie in rpl-dag.c
@@ -70,10 +84,8 @@ extern uint8_t ignore_version_number_incos; //if == 1 DIO will not reset trickle
 extern uint8_t dio_bigger_than_dag; // if version attack, this will be 1
 extern uint8_t dio_smaller_than_dag; // if version attack, this will be 1
  
-static int prevICMRecv = 0;
-static int prevICMPSent = 0;
-static int ICMPSent = 0;
-static int ICMPRecv = 0;
+static uint8_t prevICMRecv = 0;
+static uint8_t prevICMPSent = 0;
 
 /*-----------------------------------------------------------------------*/
 PROCESS(udp_client_process, "UDP client process");
@@ -282,7 +294,8 @@ monitor_DAO(void)
  */
 	//uip_ipaddr_t *addr; // is this needed ???
 	
-#define PRINT_CHANGES 1
+#define PRINT_CHANGES 0
+
 	/* In contiki, you can directly compare if(parent == parent2) */
 	if(my_cur_parent != dao_preffered_parent){
 #if PRINT_CHANGES
@@ -295,8 +308,8 @@ monitor_DAO(void)
 		my_cur_parent = dao_preffered_parent;
 		my_cur_parent_ip = dao_preffered_parent_ip;
 		
-#define PRINT_NEW_PARENT 1
-#if PRINT_NEW_PARENT
+#define PRINT_PARENT 0
+#if PRINT_PARENT
 	   printf("NP:");
 	   printLongAddr(my_cur_parent_ip);
 	   printf(", sending to %d\n", 
@@ -342,15 +355,32 @@ PROCESS_THREAD(udp_client_process, ev, data)
   static struct etimer periodic;
   static struct ctimer backoff_timer;
 
-  static int dixonQAnswerSent = 0;
-  static int dixonQAnswerRecv = 0;
-		
   PROCESS_BEGIN();
   PROCESS_PAUSE();
 
+  /* if > 0, there is an outlier in ICMP data */
+  uint8_t dixonQAnswerSent = 0;
+  uint8_t dixonQAnswerRecv = 0;
+  
+uint8_t ICMPRecv = 0;
+uint8_t ICMPSent = 0;
+
+   // RTIMER_SECOND = 32768
+
+//George original power trace was replaced with powertraceK
+// there are more printouts, they are commented out in apps/powertrace/powertrace.c
+//powertrace_start(CLOCK_SECOND * seconds, seconds, fixed_perc_energy, variation);
+
+// 2021-04-21 powertrace original but simplified from sohran. 
+//original powertracing, once every ten seconds
+//powertrace_start(CLOCK_SECOND * 100);
+
+powertrace_start(SEND_INTERVAL); 
+
+
   set_global_address();
 
-  printf("PERIOD defined: %d\n",PERIOD);
+	printf("PERIOD defined: %d\n",PERIOD);
 	
   /* The data sink runs with a 100% duty cycle in order to ensure high 
      packet reception rates. */
@@ -387,39 +417,43 @@ PROCESS_THREAD(udp_client_process, ev, data)
   printf("DixonQ active n value: %d\n",dixon_n_vals);
   printf("DixonQ confidence_level: %d\n",confidence_level);
   
-
-/********** open ALL upto the one you want ***********
- *** STANDRARD-RPL: Close monitor_DAO() above, no extra messages (NO NP)
- *** SLIM-MODE: ONLY NP-New Parent messages -> controller &
- *** SP-Send Parent messages -> nodes 
- *** ESSENTIAL MODE: Only those nodes who detect DIXON-Q irregularities
- *** will start sending ICMP stats -> controller
- *** FULL-MODE: All nodes send ICMP stats from the beggining -> controller */
-#define SLIM_MODE 1
-#define ESSENTIAL_MODE 1
-#define FULL_MODE 0
   
-#if SLIM_MODE    
-	 printf("SLIM MODE ON: Only SP...\n");
-    monitor_DAO(); 
-    monitor_ver_num();  
-#endif 	 
+  // Open all until where you want
+#define SLIM_MODE 0
+#define ESSENTIAL_MODE 0
+#define FULL_MODE 0
+
+
+#if SLIM_MODE
+ 		printf("ATTENTION: slim-mode ON\n"); 
+#else
+		printf("ATTENTION: STANDARD-RPL ON\n"); 
+#endif
 
 #if ESSENTIAL_MODE 
-	printf("ESSENTIAL MODE ON\n");
-#endif
+		printf("ATTENTION: essential-mode ON\n");     
+#endif 
 
-#if FULL_MODE
-	printf("FULL MODE ON\n");
-#endif
-  	 
-  
-  	     
+#if FULL_MODE 
+		printf("ATTENTION: full-function-mode ON\n");     
+      sendICMP = 1 ;
+      sendUDP  = 1 ;
+#endif 
 
+
+	 
   etimer_set(&periodic, SEND_INTERVAL);
   while(1) {
     PROCESS_YIELD();
 
+#if SLIM_MODE 
+    monitor_DAO(); 
+#endif    
+    
+#if ESSENTIAL_MODE 
+	monitor_ver_num();  
+#endif 
+	 
     if(ev == tcpip_event) {
       tcpip_handler();
     }
@@ -428,6 +462,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
       etimer_reset(&periodic);
 
       counter++;
+      
       uint8_t *ipLast = ((uint8_t *)my_cur_parent_ip)[15];
 #if PRINT_IP_ON      
       printf("my_cur_parent_ip: "); 
@@ -435,31 +470,21 @@ PROCESS_THREAD(udp_client_process, ev, data)
       printf("\n");
       printf("My parent last oct: %d\n",ipLast);
 #endif
-      if (counter%10 == 0 & ipLast == 1){
-      	printf("Cur Round: %d\n",counter);
+      if (counter%10 == 0 & ipLast == 1){ // sink only???
+      	PRINTF("Cur Round: %d\n",counter);
       }
- 
-      /* sending periodic data to sink (e.g. temperature measurements) */
-      ctimer_set(&backoff_timer, SEND_TIME, send_packet, NULL);  
-
-// turn off if not needed
-#define CURRENT_ICMP 0
-#if CURRENT_ICMP
-		ICMPSent = uip_stat.icmp.sent - prevICMPSent;
-		prevICMPSent = uip_stat.icmp.sent;
-		ICMPRecv = uip_stat.icmp.recv - prevICMRecv;
-		prevICMRecv = uip_stat.icmp.recv;	
-		
-		printf("R:%d, CURRENT_icmp_sent:%d\n",counter,ICMPSent);
-		printf("R:%d, CURRENT_icmp_recv:%d\n",counter,ICMPRecv);	
-#endif		
-		
-#define   STANDARD_RPL 0   
-// variable in project.conf
-#if STANDARD_RPL // ex-OVERHEAD_STATS	
-		printf("R:%d, icmp_sent_TOTAL:%d\n",counter,uip_stat.icmp.sent);
-		printf("R:%d, icmp_recv_TOTAL:%d\n",counter,uip_stat.icmp.recv);
-#endif
+      
+      /* sending periodic UDP data to sink (e.g. temperature measurements) */
+      ctimer_set(&backoff_timer, SEND_TIME, send_packet, NULL);   
+	
+if (counter > 500){	 // too many messages, ALTER AS YOU WISH      
+      printf("R: %d, trickle resets number: %d\n",counter,rpl_stats.resets);
+      printf("R: %d, global repairs: %d\n",counter,rpl_stats.global_repairs);
+      printf("R: %d, local repairs: %d\n",counter,rpl_stats.local_repairs);
+      
+		//printf("R:%d, icmp_sent_TOTAL:%d\n",counter,uip_stat.icmp.sent);
+		//printf("R:%d, icmp_recv_TOTAL:%d\n",counter,uip_stat.icmp.recv);
+}
 
 /***********************************************************************/
 /* Hybrid Security Mechanism: This is the node-part.
@@ -471,76 +496,51 @@ PROCESS_THREAD(udp_client_process, ev, data)
  * Either the node(s) are continiously running it, or the controller asks for
  * it by sending a message to turn it on.
  */	
- 
-#if ESSENTIAL_MODE 				
-		/* August 2020: Use these, counting the differences....*/		
-		dixonQAnswerSent = addDixonQOut(ICMPSent);
-		dixonQAnswerRecv = addDixonQIn(ICMPRecv);
-#endif			
+		ICMPSent = uip_stat.icmp.sent - prevICMPSent;
+		prevICMPSent = uip_stat.icmp.sent;
+		ICMPRecv = uip_stat.icmp.recv - prevICMRecv;
+		prevICMRecv = uip_stat.icmp.recv;
 
+		printf("R:%d, icmp_sent:%d\n",counter,ICMPSent);
+		printf("R:%d, icmp_recv:%d\n",counter,ICMPRecv);
+						
+		//printf("R:%d, CURRENT_icmp_sent:%d\n",counter,ICMPSent);
+		//printf("R:%d, CURRENT_icmp_recv:%d\n",counter,ICMPRecv);
+		
 		/* Try these for total number of packets sent/received until now */		
 		//int dixonQAnswerSent = addDixonQOut(uip_stat.icmp.sent);
 		//int dixonQAnswerRecv = addDixonQIn(uip_stat.icmp.recv);
-		
-#if FULL_MODE
-	// In full mode, ALL NODES send ICMP & UDP stats from the beggining
-	sendICMP = 1 ;
-	sendUDP = 1;
-#endif
-								
+
+#if ESSENTIAL_MODE
+		dixonQAnswerSent = addDixonQOut(ICMPSent);
+		dixonQAnswerRecv = addDixonQIn(ICMPRecv);
+						
 		/* Continiously monitoring fo abnormalities in icmp (Dixon q test outliers */
 		if (counter > dixon_n_vals + 3){ /* On bootstrap network is still forming */
-			//if(dixonQCounter == 0){ NOT NEEDED look below
 				/* both ICMP outliers, definitely under attack. Look for another parent */
 				if( dixonQAnswerSent > 0 && dixonQAnswerRecv > 0)
 				{
 					/* put current parent in black list and choose a new one? */
-#if ESSENTIAL_MODE
-					printf("R: %d, PANIC both icmps outliers, sendICMP==1\n",counter);
-					/* Close those two if you want to measure total packets in slim-mode */
-					sendICMP = 1;
-#endif					
-					/* close this to measure overhead in essential-mode: Only nodes
-					 * who declare PANIC will enable by themselfs the send_to_controller
-					 * ICMP stats.
-					 *
-					 */
-					//enablePanicButton = 1; /* Central Management should ask all nodes to sendICMP */
-						
+					printf("R: %d, PANIC both icmps outliers, choose a new parent maybe?\n",counter);
 				}
 				else{			
 					//TODO: Differenciate actions for small/big outlier
 					if( dixonQAnswerSent > 0 ){ /* dixonQAnswerSent = 1 or 2 */
 						printf("R:%d, Sent icmps out of bounds (outlier)\n",counter);
-						
-						//not needed
-						/* Dont test dixon for at least n times. Remember DixonQ test is valid only once */
+						sendICMP = 1 ;
+						enablePanicButton = 1; /* Central Management should ask all nodes to sendICMP */
 						dixonQCounter=1;
 					}
 				
 					if( dixonQAnswerRecv == 1 || dixonQAnswerRecv == 2){
 						printf("R:%d, Recv icmps out of bounds (outlier)\n",counter);
-									
-						//not needed
-						/* Dont test dixon for at least n times. Remember DixonQ test is valid only once */
+						sendICMP = 1 ;
+						enablePanicButton = 1; /* Central Management should ask all nodes to sendICMP */
 						dixonQCounter=1;
 					}
 				}	
-			/*	
-			}else{ // dixonQCounter > 
-				// dixon should not be used on the same data twice. After outlier wait n turns
-				// the above is wrong! DixonQ says dont use THE SAME DATA TWICE... if new value came, ok
-				if(dixonQCounter < dixon_n_vals){
-					printf("dixnoQCounter:%d increasing before using data again...\n",dixonQCounter);
-					dixonQCounter++;
-				}
-				if(dixonQCounter == dixon_n_vals){
-					printf("Reseting dixonQCounter = 0. Restart monitoring ICMP\n");
-					dixonQCounter = 0;
-				}
-			}
-			*/
 		} //if counter > dixon_n_vals + 3 at the beggining the network is still forming
+#endif
     }
 /********** End of hybrid security node part implementing dixonQ outlier ******/
 
@@ -553,7 +553,16 @@ PROCESS_THREAD(udp_client_process, ev, data)
 		sendICMPStats();
    	//ctimer_set(&backoff_timer, SEND_TIME, sendICMPStats, NULL); 
     }
-    //ctimer_set(&backoff_timer, SEND_TIME, send_all_neighbors, NULL);     
+    //ctimer_set(&backoff_timer, SEND_TIME, send_all_neighbors, NULL);
+  
+    // Printing energy from altered powertrace.c
+    //printf("R:%d, Battery: Energy Periodic consumption (microA): %u\n",counter,(int)(periodic_consumption)); 
+    
+    //printf("Battery: Energy Total consumption (microA): %lu\n",(unsigned long) (total_consumption));
+  
+	 printf("POWER R:%u %lu %lu %lu %lu %lu %lu %lu %lu\n", counter,
+	 	all_cpu, all_lpm, all_transmit, all_listen);      
+  
   }
   PROCESS_END();
 }

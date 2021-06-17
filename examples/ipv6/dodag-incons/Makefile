@@ -1,8 +1,9 @@
-all: udp-client udp-server
-.SILENT:
+all: udp-server udp-client-DODAG-inconsistency
 CONTIKI=../../..
 
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
+TARGET_LIBFILES += -lm
+APPS+=powertrace
 
 ifdef WITH_COMPOWER
 APPS+=powertrace

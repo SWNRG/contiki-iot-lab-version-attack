@@ -4,9 +4,7 @@
 #include "net/ip/uip.h"
 #include "net/ipv6/uip-ds6.h"
 #include "net/ip/uip-udp-packet.h"
-
 //#include "net/rpl/rpl.h"      //coral
-
 #include "sys/ctimer.h"
 #include <stdio.h>
 #include <string.h>
@@ -22,9 +20,9 @@
 #define UIP_IP_BUF   ((struct uip_ip_hdr *)&uip_buf[UIP_LLH_LEN])
 
 //#define DEBUG DEBUG_FULL
-#if DEBUG
+//#if DEBUG
 #include "net/ip/uip-debug.h"
-#endif
+//#endif
 
 
 //#include "apps/powertrace/powertrace.h"
@@ -57,7 +55,9 @@ static uip_ipaddr_t server_ipaddr;
 static uip_ipaddr_t destination_ipaddr;
 
 /* Get the preffered parent, and the current own IP of the node */
-#include "net/rpl/rpl-icmp6.c"
+/* June 2021 Was not compiling in iot-lab */
+//#include "core/net/rpl/rpl-icmp6.c" 
+#include "net/rpl/icmp6-extern.h"
 extern   rpl_parent_t *dao_preffered_parent;
 extern   uip_ipaddr_t *dao_preffered_parent_ip;
 extern   uip_ipaddr_t dao_prefix_own_ip;
@@ -65,7 +65,16 @@ extern   uip_ipaddr_t dao_prefix_own_ip;
 /* Monitor this var. When changed, the node has changed parent */
 static rpl_parent_t *my_cur_parent;
 static uip_ipaddr_t *my_cur_parent_ip;
-static int counter=0; //counting rounds. Not really needed
+
+/* When the controller detects version number attack, it orders to stop
+ * resetting the tricle timer. The variables below lie in rpl-dag.c
+ */
+//#include "net/rpl/rpl-dag.c"
+#include "net/rpl/rpl-extern.h"
+extern uint8_t ignore_version_number_incos; //if == 1 DIO will not reset trickle
+extern uint8_t dio_bigger_than_dag; // if version attack, this will be 1
+extern uint8_t dio_smaller_than_dag; // if version attack, this will be 1
+
 
 /* When this variable is true, start sending UDP stats */
 static uint8_t sendUDP = 0; 
@@ -75,18 +84,10 @@ static uint8_t sendICMP = 0;
 
 /* When true, the controller will start probing all nodes for detais */
 static int enablePanicButton = 0;
-
-/* When the controller detects version number attack, it orders to stop
- * resetting the tricle timer. The variables below lie in rpl-dag.c
- */
-#include "net/rpl/rpl-dag.c"
-extern uint8_t ignore_version_number_incos; //if == 1 DIO will not reset trickle
-extern uint8_t dio_bigger_than_dag; // if version attack, this will be 1
-extern uint8_t dio_smaller_than_dag; // if version attack, this will be 1
  
 static uint8_t prevICMRecv = 0;
 static uint8_t prevICMPSent = 0;
-
+static int counter=0; //counting rounds. Not really needed
 /*-----------------------------------------------------------------------*/
 PROCESS(udp_client_process, "UDP client process");
 AUTOSTART_PROCESSES(&udp_client_process);
