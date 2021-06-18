@@ -63,8 +63,8 @@ static uip_ipaddr_t destination_ipaddr;
 
 /* Get the preffered parent, and the current own IP of the node */
 /* June 2021 Was not compiling in iot-lab */
-#include "core/net/rpl/rpl-icmp6.c" 
-//#include "net/rpl/icmp6-extern.h"
+//#include "core/net/rpl/rpl-icmp6.c" 
+#include "net/rpl/icmp6-extern.h"
 extern rpl_parent_t *dao_preffered_parent;
 extern uip_ipaddr_t *dao_preffered_parent_ip;
 extern uip_ipaddr_t dao_prefix_own_ip;
