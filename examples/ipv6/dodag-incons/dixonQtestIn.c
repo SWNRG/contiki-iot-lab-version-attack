@@ -229,8 +229,8 @@ static void quicksort_i(int number[],int first,int last){
 		temp=number[pivot];
 		number[pivot]=number[j];
 		number[j]=temp;
-		quicksort(number,first,j-1);
-		quicksort(number,j+1,last);
+	//	quicksort(number,first,j-1); causing problems in iot-lab
+	//	quicksort(number,j+1,last);
 	}
 }
 
