@@ -1,4 +1,4 @@
-#include "contiki.h"
+//#include "contiki.h"
 
 /* SOS SOS iot-lab finds multiple libs fo rpl_* */
 
