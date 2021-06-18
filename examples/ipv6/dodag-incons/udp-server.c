@@ -1,15 +1,12 @@
-//#include "contiki.h"
-
-/* SOS SOS iot-lab finds multiple libs fo rpl_* */
-
-//#include "contiki-lib.h"
-//#include "contiki-net.h"
-//#include "net/ip/uip.h"
+#include "contiki.h"
+#include "contiki-lib.h"
+#include "contiki-net.h"
+#include "net/ip/uip.h"
 #include "net/rpl/rpl.h"
 
 #include "node-id.h" 
 
-//#include "net/netstack.h"
+#include "net/netstack.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,8 +53,15 @@ static rpl_dag_t *dag; //moved here to be global var
 /* When the controller detects version number attack, it orders to stop
  * resetting the tricle timer. The variable lies in rpl-dag.c
  */
-#include "net/rpl/rpl-dag.c"
+//#include "net/rpl/rpl-dag.c"
+// June 2021 the above was causing compile errors in iot-lab
+#include "rpl-extern.h"
 extern uint8_t ignore_version_number_incos;
+
+// from rpl-private.h
+#include "net/rpl/rpl-private.h"
+extern rpl_stats_t rpl_stats;
+
 
 static int prevICMRecv = 0;
 static int prevICMPSent = 0;
@@ -151,10 +155,10 @@ print_all_routes(void)
 
 		 /* Controller is reading a line starting from "Route " */
 		 printf("Route: ");
-		 printLongAddr(local_child); //direct child
+		 printIP6Address(local_child); //direct child
 		 //printLongAddr(&r->ipaddr); // fd00:...
 		 printf(" ");
-		 printLongAddr(nexthop); // all decentant(s)
+		 printIP6Address(nexthop); // all decentant(s)
 		 /* when lt >>> 0, the connection does not exist any more */
 		 printf(" lt:%lu\n", r->state.lifetime);	 
 	}//for *r 
@@ -367,7 +371,6 @@ PROCESS_THREAD(udp_server_process, ev, data)
 
 
 
-
 /* IS THIS USED ANYWHERE ????????????????? */
 
 
@@ -375,9 +378,6 @@ PROCESS_THREAD(udp_server_process, ev, data)
 	/* if mote==Z1, uart0_set_input, if mote==sky, uart1_set_input */
 	//uart0_init(BAUD2UBR(115200));
 	//uart0_set_input(serial_input_byte);
-
-
-
 
 
 
