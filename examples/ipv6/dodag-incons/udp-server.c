@@ -1,12 +1,15 @@
 #include "contiki.h"
-#include "contiki-lib.h"
-#include "contiki-net.h"
-#include "net/ip/uip.h"
+
+/* SOS SOS iot-lab finds multiple libs fo rpl_* */
+
+//#include "contiki-lib.h"
+//#include "contiki-net.h"
+//#include "net/ip/uip.h"
 #include "net/rpl/rpl.h"
 
 #include "node-id.h" 
 
-#include "net/netstack.h"
+//#include "net/netstack.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
