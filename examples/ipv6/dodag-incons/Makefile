@@ -1,4 +1,4 @@
-all: udp-server udp-client-DODAG-inconsistency
+all: udp-server udp-client-george
 CONTIKI=../../..
 
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"

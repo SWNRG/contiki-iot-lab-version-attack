@@ -11,9 +11,9 @@
 #include "net/rpl/rpl-private.h"
 
 /* George they will be sent to app layer for extra info to the sink */ 
-static  rpl_parent_t *dao_preffered_parent;
-static  uip_ipaddr_t *dao_preffered_parent_ip;
-static  uip_ipaddr_t dao_prefix_own_ip;
-static uint8_t dao_parent;
+rpl_parent_t *dao_preffered_parent;
+uip_ipaddr_t *dao_preffered_parent_ip;
+uip_ipaddr_t dao_prefix_own_ip;
+uint8_t dao_parent_set; /* it does not seem to be used anywhere? */
 
 #endif /* ICMP6_EXTERN_H */

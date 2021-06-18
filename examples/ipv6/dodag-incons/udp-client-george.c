@@ -4,7 +4,9 @@
 #include "net/ip/uip.h"
 #include "net/ipv6/uip-ds6.h"
 #include "net/ip/uip-udp-packet.h"
-//#include "net/rpl/rpl.h"      //coral
+
+#include "net/rpl/rpl.h"      //coral
+
 #include "sys/ctimer.h"
 #include <stdio.h>
 #include <string.h>
@@ -24,8 +26,16 @@
 #include "net/ip/uip-debug.h"
 //#endif
 
+#ifndef POWERTRACE_ON
+#define POWERTRACE_ON 0
+#endif
 
-//#include "apps/powertrace/powertrace.h"
+#if POWERTRACE_ON
+#include "apps/powertrace/powertrace.h"
+// from powertrace sohan
+extern uint32_t all_cpu, all_lpm, all_transmit, all_listen;
+#endif
+
 // ASSIGN THEM DIRECTLY TOO MUCH MEM ALOCATION
 //unsigned seconds=60*5;// warning: if this variable is changed, then the kinect variable the count the minutes should be changed
 //double fixed_perc_energy = 1;// 0 - 1
@@ -34,9 +44,6 @@
 
 //extern double periodic_consumption; // set in powertrace. Used here with round
 //extern double total_consumption;
-
-// from powertrace sohan
-//extern uint32_t all_cpu, all_lpm, all_transmit, all_listen;
 
 #ifndef PERIOD
 #define PERIOD 500 /* increase it to 700 avoid flooding */
@@ -56,15 +63,24 @@ static uip_ipaddr_t destination_ipaddr;
 
 /* Get the preffered parent, and the current own IP of the node */
 /* June 2021 Was not compiling in iot-lab */
-//#include "core/net/rpl/rpl-icmp6.c" 
-#include "net/rpl/icmp6-extern.h"
-extern   rpl_parent_t *dao_preffered_parent;
-extern   uip_ipaddr_t *dao_preffered_parent_ip;
-extern   uip_ipaddr_t dao_prefix_own_ip;
+#include "core/net/rpl/rpl-icmp6.c" 
+//#include "net/rpl/icmp6-extern.h"
+extern rpl_parent_t *dao_preffered_parent;
+extern uip_ipaddr_t *dao_preffered_parent_ip;
+extern uip_ipaddr_t dao_prefix_own_ip;
 
 /* Monitor this var. When changed, the node has changed parent */
 static rpl_parent_t *my_cur_parent;
 static uip_ipaddr_t *my_cur_parent_ip;
+
+/* When this variable is true, start sending UDP stats */
+static uint8_t sendUDP = 0; 
+
+/* When this variable is true, start sending ICMP stats */
+static uint8_t sendICMP = 0; 
+
+/* When true, the controller will start probing all nodes for detais */
+enablePanicButton = 0;
 
 /* When the controller detects version number attack, it orders to stop
  * resetting the tricle timer. The variables below lie in rpl-dag.c
@@ -74,19 +90,10 @@ static uip_ipaddr_t *my_cur_parent_ip;
 extern uint8_t ignore_version_number_incos; //if == 1 DIO will not reset trickle
 extern uint8_t dio_bigger_than_dag; // if version attack, this will be 1
 extern uint8_t dio_smaller_than_dag; // if version attack, this will be 1
-
-
-/* When this variable is true, start sending UDP stats */
-static uint8_t sendUDP = 0; 
-
-/* When this variable is true, start sending ICMP stats */
-static uint8_t sendICMP = 0; 
-
-/* When true, the controller will start probing all nodes for detais */
-static int enablePanicButton = 0;
  
 static uint8_t prevICMRecv = 0;
 static uint8_t prevICMPSent = 0;
+
 static int counter=0; //counting rounds. Not really needed
 /*-----------------------------------------------------------------------*/
 PROCESS(udp_client_process, "UDP client process");
@@ -295,8 +302,7 @@ monitor_DAO(void)
  */
 	//uip_ipaddr_t *addr; // is this needed ???
 	
-#define PRINT_CHANGES 0
-
+#define PRINT_CHANGES 1
 	/* In contiki, you can directly compare if(parent == parent2) */
 	if(my_cur_parent != dao_preffered_parent){
 #if PRINT_CHANGES
@@ -309,8 +315,8 @@ monitor_DAO(void)
 		my_cur_parent = dao_preffered_parent;
 		my_cur_parent_ip = dao_preffered_parent_ip;
 		
-#define PRINT_NEW_PARENT 0
-#if PRINT_NEW_PARENT
+#define PRINT_PARENT 1
+#if PRINT_PARENT
 	   printf("NP:");
 	   printLongAddr(my_cur_parent_ip);
 	   printf(", sending to %d\n", 
@@ -376,7 +382,7 @@ uint8_t ICMPSent = 0;
 //original powertracing, once every ten seconds
 //powertrace_start(CLOCK_SECOND * 100);
 
-//powertrace_start(SEND_INTERVAL); 
+powertrace_start(SEND_INTERVAL); 
 
 
   set_global_address();
@@ -418,30 +424,22 @@ uint8_t ICMPSent = 0;
   printf("DixonQ active n value: %d\n",dixon_n_vals);
   printf("DixonQ confidence_level: %d\n",confidence_level);
   
-  
-  // Open all until where you want
-#define SLIM_MODE 0
-#define ESSENTIAL_MODE 0
+  /* ATTENTION: Open ALL those you want */
+#define SLIM_MODE 1
+#define ESSENTIAL_MODE 1
 #define FULL_MODE 0
 
-
-#if SLIM_MODE
- 		printf("ATTENTION: slim-mode ON\n"); 
-#else
-		printf("ATTENTION: STANDARD-RPL ON\n"); 
-#endif
-
-#if ESSENTIAL_MODE 
-		printf("ATTENTION: essential-mode ON\n");     
-#endif 
-
 #if FULL_MODE 
-		printf("ATTENTION: full-function-mode ON\n");     
-      sendICMP = 1 ;
-      sendUDP  = 1 ;
-#endif 
-
-
+	printf("ATTENTION: full-function-mode ON\n");     
+   sendICMP = 1 ;
+   sendUDP  = 1 ;
+#elif ESSENTIAL_MODE 
+	printf("ATTENTION: essential-mode ON\n"); 
+#elif SLIM_MODE
+	printf("ATTENTION: slim-mode ON\n"); 
+#else
+	printf("ATTENTION: STANDARD-RPL ON\n"); 
+#endif
 	 
   etimer_set(&periodic, SEND_INTERVAL);
   while(1) {
@@ -471,14 +469,14 @@ uint8_t ICMPSent = 0;
       printf("\n");
       printf("My parent last oct: %d\n",ipLast);
 #endif
-      if ( (counter%10 == 0) && (ipLast == 1) ){ // sink only???
+      if (counter%10 == 0 & ipLast == 1){ // sink only???
       	PRINTF("Cur Round: %d\n",counter);
       }
       
       /* sending periodic UDP data to sink (e.g. temperature measurements) */
       ctimer_set(&backoff_timer, SEND_TIME, send_packet, NULL);   
 	
-if (counter > 0){	 // too many messages      
+if (counter > 1){	 // too many messages, ALTER AS YOU WISH      
       printf("R: %d, trickle resets number: %d\n",counter,rpl_stats.resets);
       printf("R: %d, global repairs: %d\n",counter,rpl_stats.global_repairs);
       printf("R: %d, local repairs: %d\n",counter,rpl_stats.local_repairs);
@@ -560,16 +558,11 @@ if (counter > 0){	 // too many messages
     //printf("R:%d, Battery: Energy Periodic consumption (microA): %u\n",counter,(int)(periodic_consumption)); 
     
     //printf("Battery: Energy Total consumption (microA): %lu\n",(unsigned long) (total_consumption));
-  
-  // George , June 2021
-  
-  // I will try to use the power consumption from iot-lab.
-  // if it does not work, DO ENABLE THESE. DONT FORGET to copy files needed
-  
-  
-	 //printf("POWER R:%u %lu %lu %lu %lu %lu %lu %lu %lu\n", counter,
-	 	// all_cpu, all_lpm, all_transmit, all_listen);      
-  
+
+#if POWERTRACE_ON  
+	 printf("POWER R:%u %lu %lu %lu %lu %lu %lu %lu %lu\n", counter,
+	 	all_cpu, all_lpm, all_transmit, all_listen);      
+#endif  
   }
   PROCESS_END();
 }
