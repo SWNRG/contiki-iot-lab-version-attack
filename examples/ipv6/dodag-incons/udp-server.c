@@ -155,10 +155,10 @@ print_all_routes(void)
 
 		 /* Controller is reading a line starting from "Route " */
 		 printf("Route: ");
-		 printIP6Address(local_child); //direct child
+		 printLongAddr(local_child); //direct child
 		 //printLongAddr(&r->ipaddr); // fd00:...
 		 printf(" ");
-		 printIP6Address(nexthop); // all decentant(s)
+		 printLongAddr(nexthop); // all decentant(s)
 		 /* when lt >>> 0, the connection does not exist any more */
 		 printf(" lt:%lu\n", r->state.lifetime);	 
 	}//for *r 
