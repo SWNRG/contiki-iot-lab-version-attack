@@ -396,13 +396,13 @@ PROCESS_THREAD(udp_server_process, ev, data)
     
     if(etimer_expired(&periodic)) {
       etimer_reset(&periodic);
-      ctimer_set(&backoff_timer, SEND_TIME, ping_only, NULL);
+      //ctimer_set(&backoff_timer, SEND_TIME, ping_only, NULL);
       
       counter++;
       
-      // TODO: sent this to the controller. 
+      // TODO: send this to the controller. 
       /* If any node is found with equal or less, 
-       * this is a rank attack
+       * it means there is a rank attack
       */
       printf("R: %d, my current rank: %d\n",counter, dag->rank);
          
