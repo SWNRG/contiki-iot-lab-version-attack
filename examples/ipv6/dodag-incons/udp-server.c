@@ -58,7 +58,7 @@ static rpl_dag_t *dag; //moved here to be global var
 #include "rpl-extern.h"
 extern uint8_t ignore_version_number_incos;
 
-// from rpl-private.h
+/* to print stats on trickle resets and global repairs */
 #include "net/rpl/rpl-private.h"
 extern rpl_stats_t rpl_stats;
 

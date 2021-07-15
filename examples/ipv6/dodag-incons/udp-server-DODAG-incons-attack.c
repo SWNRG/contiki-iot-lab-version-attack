@@ -47,7 +47,13 @@ int counter = 0; // just a round counter
  * resetting the tricle timer. The variable lies in rpl-dag.c
  */
 #include "net/rpl/rpl-dag.c"
+// June 2021 the above was causing compile errors in iot-lab
+#include "rpl-extern.h"
 extern uint8_t ignore_version_number_incos;
+
+/* to print stats on trickle resets and global repairs */
+#include "net/rpl/rpl-private.h"
+extern rpl_stats_t rpl_stats;
 
 PROCESS(udp_server_process, "UDP server process");
 //PROCESS(read_serial, "Read serial process");
@@ -363,8 +369,16 @@ PROCESS_THREAD(udp_server_process, ev, data)
       //ctimer_set(&backoff_timer, SEND_TIME, ping_only, NULL);
       
       counter++;
+      
+      
+#ifndef DODAG_ATTACK_STATS
+#define DODAG_ATTACK_STATS 1
+#endif
+            
+#if DODAG_ATTACK_STATS      
       printf("R: %d, trickle resets number: %d\n",counter,rpl_stats.resets);
       printf("R: %d, global repairs: %d\n",counter,rpl_stats.global_repairs);
+#endif
       
     }
   }
