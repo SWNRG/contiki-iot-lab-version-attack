@@ -46,7 +46,7 @@ int counter = 0; // just a round counter
 /* When the controller detects version number attack, it orders to stop
  * resetting the tricle timer. The variable lies in rpl-dag.c
  */
-#include "net/rpl/rpl-dag.c"
+//#include "net/rpl/rpl-dag.c"
 // June 2021 the above was causing compile errors in iot-lab
 #include "rpl-extern.h"
 extern uint8_t ignore_version_number_incos;
