@@ -21,8 +21,8 @@
 
 #define MAX_PAYLOAD_LEN		30
 
-//#define DEBUG DEBUG_PRINT
 #include "net/ip/uip-debug.h"
+//#define DEBUG DEBUG_PRINT
 
 #define UIP_IP_BUF   ((struct uip_ip_hdr *)&uip_buf[UIP_LLH_LEN])
 #define UDP_CLIENT_PORT	8765
@@ -61,7 +61,6 @@ extern uint8_t ignore_version_number_incos;
 /* to print stats on trickle resets and global repairs */
 #include "net/rpl/rpl-private.h"
 extern rpl_stats_t rpl_stats;
-
 
 static int prevICMRecv = 0;
 static int prevICMPSent = 0;
