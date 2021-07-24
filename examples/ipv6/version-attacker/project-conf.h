@@ -24,9 +24,9 @@
 // George OCt 2020 is this better for big networks?
 #define UIP_CONF_MAX_ROUTES   40
 
-
-
-
+#ifndef MALICIOUS_LEVEL // Only used for rank attacks
+#define MALICIOUS_LEVEL 0
+#endif
 
 //#else
 /* configure number of neighbors and routes */
