@@ -306,7 +306,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
 	PRINTF("UDP client process started nbr:%d routes:%d\n",
 		   NBR_TABLE_CONF_MAX_NEIGHBORS, UIP_CONF_MAX_ROUTES);
 
-	print_local_addresses();
+ 	//print_local_addresses(); /* printing the address AFTER the counter has started */
 
 	/* new connection with remote host */
 	client_conn = udp_new(NULL, UIP_HTONS(UDP_SERVER_PORT), NULL); 
@@ -349,6 +349,11 @@ PROCESS_THREAD(udp_client_process, ev, data)
  */
 		if(etimer_expired(&periodic)) {
 			etimer_reset(&periodic);
+			
+			if(counter==1){/* print node's OWN IP after the counter */				
+				print_local_addresses():
+			}
+			
 			counter++;	 
 			PRINTF("Counter %d\n",counter); 
 			 
